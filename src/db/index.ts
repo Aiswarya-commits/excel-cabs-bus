@@ -12,9 +12,10 @@ import * as schema from "./schema";
 
 type DB = NodePgDatabase<typeof schema>;
 const MIGRATIONS = path.join(process.cwd(), "drizzle");
+const DATA_DIR = path.join(process.cwd(), ".data", "db");
 export const usingEmbeddedDb = !process.env.DATABASE_URL;
 
-const g = globalThis as unknown as { __db?: DB; __pool?: Pool; __pglite?: { close(): Promise<void> }; __ready?: Promise<void> };
+const g = globalThis as unknown as { __db?: DB; __pool?: Pool; __pglite?: { close(): Promise<void> }; __ready?: Promise<void>; __memory?: boolean };
 
 function create(): DB {
   if (g.__db) return g.__db;
@@ -27,9 +28,9 @@ function create(): DB {
     const { PGlite } = require("@electric-sql/pglite");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { drizzle } = require("drizzle-orm/pglite");
-    const dir = path.join(process.cwd(), ".data", "db");
-    fs.mkdirSync(dir, { recursive: true });
-    const client = new PGlite(dir);
+    let client;
+    if (g.__memory) client = new PGlite(); // in-memory fallback (data resets on restart)
+    else { fs.mkdirSync(DATA_DIR, { recursive: true }); client = new PGlite(DATA_DIR); }
     g.__pglite = client;
     g.__db = drizzle(client, { schema }) as DB; // same query API
   }
@@ -44,20 +45,39 @@ export const db: DB = new Proxy({} as DB, {
     return typeof v === "function" ? (v as (...a: unknown[]) => unknown).bind(real) : v;
   },
 });
+
 /** Runs migrations (and, for the embedded DB, loads demo data the first time). */
 export function ensureReady(opts: { seedIfEmpty?: boolean } = { seedIfEmpty: true }): Promise<void> {
   if (g.__ready) return g.__ready;
   g.__ready = (async () => {
     if (usingEmbeddedDb) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { migrate } = require("drizzle-orm/pglite/migrator");
-      await migrate(db, { migrationsFolder: MIGRATIONS });
-      if (opts.seedIfEmpty) {
-        const r = await db.execute<{ n: number }>(sql`select count(*)::int as n from users`);
-        if (!r.rows[0] || Number(r.rows[0].n) === 0) {
-          console.log("[db] Empty built-in database — loading demo data…");
-          const { seed } = await import("./seed");
-          await seed(db);
+      const setup = async () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { migrate } = require("drizzle-orm/pglite/migrator");
+        await migrate(db, { migrationsFolder: MIGRATIONS });
+        if (opts.seedIfEmpty) {
+          const r = await db.execute<{ n: number }>(sql`select count(*)::int as n from users`);
+          if (!r.rows[0] || Number(r.rows[0].n) === 0) {
+            console.log("[db] Empty built-in database — loading demo data…");
+            const { seed } = await import("./seed");
+            await seed(db);
+          }
+        }
+      };
+      const reset = async () => { try { await g.__pglite?.close(); } catch {} g.__pglite = undefined; g.__db = undefined; };
+      try {
+        await setup();
+      } catch (e) {
+        // Usually a damaged .data folder (e.g. two servers used it at once). Move it aside and start fresh.
+        console.warn("[db] Built-in database could not open — creating a fresh one.", (e as Error).message);
+        await reset();
+        try {
+          if (fs.existsSync(DATA_DIR)) fs.renameSync(DATA_DIR, `${DATA_DIR}-broken-${Date.now()}`);
+          await setup();
+        } catch (e2) {
+          console.warn("[db] Using an in-memory database for this session (data resets on restart).", (e2 as Error).message);
+          await reset(); g.__memory = true;
+          await setup();
         }
       }
     } else {
