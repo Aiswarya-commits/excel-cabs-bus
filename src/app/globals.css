@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ───────── BRAND THEME — Excel Cabs (from the official logo) ─────────
+   Values are "R G B". Red = logo "E" + ring, Orange = logo "X" swoosh.  */
+:root {
+  --brand-50: 253 236 236;   /* #fdecec */
+  --brand-100: 249 208 208;  /* #f9d0d0 */
+  --brand-200: 242 167 167;  /* #f2a7a7 */
+  --brand-500: 211 47 47;    /* #d32f2f */
+  --brand-600: 184 16 16;    /* #b81010  ← primary (logo red) */
+  --brand-700: 150 12 12;    /* #960c0c */
+  --brand-900: 98 8 8;       /* #620808 */
+  --accent: 224 88 24;       /* #e05818  logo orange */
+  --accent-dark: 194 65 12;  /* #c2410c */
+  --font-sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+html { -webkit-tap-highlight-color: transparent; }
+body { @apply bg-slate-50 text-slate-800 antialiased; }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700 shadow-sm; }
+  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark shadow-sm; }  
+  .btn-outline { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
+  .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100; }
+  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .input { @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:bg-slate-100; }
+  .label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500; }
+  .card { @apply rounded-xl border border-slate-200 bg-white shadow-card; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold; }
+  .table-x { @apply w-full text-left text-sm; }
+  .table-x th { @apply whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500; }
+  .table-x td { @apply border-b border-slate-100 px-3 py-2.5 align-middle; }
+  .table-x tr:hover td { @apply bg-brand-50/40; }
+}
+
+/* seat map */
+.seat { @apply flex h-9 w-9 items-center justify-center rounded-md border-2 text-xs font-semibold transition select-none; }
+.seat-free { @apply border-brand-500/60 bg-white text-brand-700 hover:bg-brand-50 cursor-pointer; }
+.seat-taken { @apply border-slate-200 bg-slate-200 text-slate-400 cursor-not-allowed; }
+.seat-selected { @apply border-brand-600 bg-brand-600 text-white cursor-pointer; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .card { box-shadow: none; border-color: #ddd; }
+}

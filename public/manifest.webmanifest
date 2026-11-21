@@ -1,0 +1,17 @@
+{
+  "name": "Excel Cabs Bus — Book & Manage",
+  "short_name": "Excel Bus",
+  "description": "Book local bus seats with Excel Cabs. Staff can manage trips, bookings and payments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b81010",  
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo-mark.png", "sizes": "any", "type": "image/png" }
+  ],  "shortcuts": [
+    { "name": "Manage booking", "url": "/manage" },
+    { "name": "Staff dashboard", "url": "/admin" }
+  ]
+}
